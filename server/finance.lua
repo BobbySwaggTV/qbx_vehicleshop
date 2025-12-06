@@ -254,10 +254,20 @@ RegisterNetEvent('qbx_vehicleshop:server:sellfinanceVehicle', function(downPayme
         }
     })
 
-    SpawnVehicle(playerId, {
+    local netId = SpawnVehicle(playerId, {
         coords = coords,
         vehicleId = vehicleId
     })
+
+    -- Auto-register with Imperial CAD if enabled
+    if config.imperialCAD.enable and config.imperialCAD.autoRegister and netId then
+        SetTimeout(1000, function() -- Small delay to ensure vehicle is fully spawned
+            local veh = NetworkGetEntityFromNetworkId(netId)
+            if veh and DoesEntityExist(veh) then
+                config.registerVehicleImperialCAD(veh, target.PlayerData)
+            end
+        end)
+    end
     financeTimer[target.PlayerData.source].hasFinanced = true
 end)
 
@@ -324,10 +334,20 @@ RegisterNetEvent('qbx_vehicleshop:server:financeVehicle', function(downPayment, 
 
     exports.qbx_core:Notify(src, locale('success.purchased'), 'success')
 
-    SpawnVehicle(src, {
+    local netId = SpawnVehicle(src, {
         coords = coords,
         vehicleId = vehicleId
     })
+
+    -- Auto-register with Imperial CAD if enabled
+    if config.imperialCAD.enable and config.imperialCAD.autoRegister and netId then
+        SetTimeout(1000, function() -- Small delay to ensure vehicle is fully spawned
+            local veh = NetworkGetEntityFromNetworkId(netId)
+            if veh and DoesEntityExist(veh) then
+                config.registerVehicleImperialCAD(veh, player.PlayerData)
+            end
+        end)
+    end
 
     financeTimer[src].hasFinanced = true
 end)

@@ -144,10 +144,20 @@ RegisterNetEvent('qbx_vehicleshop:server:buyShowroomVehicle', function(vehicle)
 
     exports.qbx_core:Notify(src, locale('success.purchased'), 'success')
 
-    SpawnVehicle(src, {
+    local netId = SpawnVehicle(src, {
         coords = coords,
         vehicleId = vehicleId
     })
+
+    -- Auto-register with Imperial CAD if enabled
+    if config.imperialCAD.enable and config.imperialCAD.autoRegister and netId then
+        SetTimeout(1000, function() -- Small delay to ensure vehicle is fully spawned
+            local veh = NetworkGetEntityFromNetworkId(netId)
+            if veh and DoesEntityExist(veh) then
+                config.registerVehicleImperialCAD(veh, player.PlayerData)
+            end
+        end)
+    end
 end)
 
 ---@param src number
@@ -210,10 +220,20 @@ RegisterNetEvent('qbx_vehicleshop:server:sellShowroomVehicle', function(vehicle,
         citizenid = cid,
     })
 
-    SpawnVehicle(playerId, {
+    local netId = SpawnVehicle(playerId, {
         coords = coords,
         vehicleId = vehicleId
     })
+
+    -- Auto-register with Imperial CAD if enabled
+    if config.imperialCAD.enable and config.imperialCAD.autoRegister and netId then
+        SetTimeout(1000, function() -- Small delay to ensure vehicle is fully spawned
+            local veh = NetworkGetEntityFromNetworkId(netId)
+            if veh and DoesEntityExist(veh) then
+                config.registerVehicleImperialCAD(veh, target.PlayerData)
+            end
+        end)
+    end
 end)
 
 -- Transfer vehicle to player in passenger seat
@@ -330,3 +350,44 @@ lib.addCommand('transfervehicle', {
         end
     end, GetEntityModel(vehicle), sellAmount)
 end)
+
+-- Register vehicle with Imperial CAD
+lib.addCommand('regveh', {
+    help = 'Register your current vehicle with Imperial CAD',
+}, function(source)
+    if not config.imperialCAD.enable then
+        return exports.qbx_core:Notify(source, 'Imperial CAD integration is disabled', 'error')
+    end
+
+    local ped = GetPlayerPed(source)
+    local vehicle = GetVehiclePedIsIn(ped, false)
+
+    if vehicle == 0 then
+        return exports.qbx_core:Notify(source, locale('error.notinveh'), 'error')
+    end
+
+    local vehicleId = Entity(vehicle).state.vehicleid or exports.qbx_vehicles:GetVehicleIdByPlate(GetVehicleNumberPlateText(vehicle))
+    if not vehicleId then
+        return exports.qbx_core:Notify(source, locale('error.notowned'), 'error')
+    end
+
+    local player = exports.qbx_core:GetPlayer(source)
+    local row = exports.qbx_vehicles:GetPlayerVehicle(vehicleId)
+
+    if not row then
+        return exports.qbx_core:Notify(source, locale('error.notowned'), 'error')
+    end
+
+    if row.citizenid ~= player.PlayerData.citizenid then
+        return exports.qbx_core:Notify(source, locale('error.notown'), 'error')
+    end
+
+    local success = config.registerVehicleImperialCAD(vehicle, player.PlayerData)
+
+    if success then
+        exports.qbx_core:Notify(source, 'Vehicle successfully registered with Imperial CAD', 'success')
+    else
+        exports.qbx_core:Notify(source, 'Failed to register vehicle with Imperial CAD', 'error')
+    end
+end)
+
