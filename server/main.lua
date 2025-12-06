@@ -391,3 +391,45 @@ lib.addCommand('regveh', {
     end
 end)
 
+-- Sync VIN from Imperial CAD to database
+lib.addCommand('syncvin', {
+    help = 'Sync VIN from Imperial CAD to the vehicle database',
+}, function(source)
+    if not config.imperialCAD.enable then
+        return exports.qbx_core:Notify(source, 'Imperial CAD integration is disabled', 'error')
+    end
+
+    local ped = GetPlayerPed(source)
+    local vehicle = GetVehiclePedIsIn(ped, false)
+
+    if vehicle == 0 then
+        return exports.qbx_core:Notify(source, locale('error.notinveh'), 'error')
+    end
+
+    local plate = GetVehicleNumberPlateText(vehicle)
+    local vehicleId = Entity(vehicle).state.vehicleid or exports.qbx_vehicles:GetVehicleIdByPlate(plate)
+
+    if not vehicleId then
+        return exports.qbx_core:Notify(source, locale('error.notowned'), 'error')
+    end
+
+    local player = exports.qbx_core:GetPlayer(source)
+    local row = exports.qbx_vehicles:GetPlayerVehicle(vehicleId)
+
+    if not row then
+        return exports.qbx_core:Notify(source, locale('error.notowned'), 'error')
+    end
+
+    if row.citizenid ~= player.PlayerData.citizenid then
+        return exports.qbx_core:Notify(source, locale('error.notown'), 'error')
+    end
+
+    local success = config.syncVINFromImperialCAD(plate, vehicleId)
+
+    if success then
+        exports.qbx_core:Notify(source, 'Syncing VIN from Imperial CAD...', 'success')
+    else
+        exports.qbx_core:Notify(source, 'Failed to sync VIN from Imperial CAD', 'error')
+    end
+end)
+

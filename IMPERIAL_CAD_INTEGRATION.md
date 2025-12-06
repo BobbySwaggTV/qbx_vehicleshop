@@ -1,0 +1,126 @@
+# Imperial CAD Integration for qbx_vehicleshop
+
+This integration adds full support for Imperial CAD vehicle registration system.
+
+## Features
+
+### 1. Automatic Vehicle Registration
+When players purchase vehicles (cash, financed, or through sales), they are automatically registered with Imperial CAD if enabled.
+
+### 2. Manual Vehicle Registration Command
+Players can manually register their vehicle with Imperial CAD using:
+```
+/regveh
+```
+
+### 3. VIN Synchronization
+Pull VIN data from Imperial CAD and store it in the `player_vehicles` database using:
+```
+/syncvin
+```
+
+## Installation
+
+### 1. Database Setup
+Run the SQL migration to add the VIN column to your database:
+```sql
+-- Run add_vin_column.sql
+ALTER TABLE `player_vehicles`
+ADD COLUMN `vin` VARCHAR(17) DEFAULT NULL AFTER `plate`;
+```
+
+### 2. Configuration
+Edit `config/server.lua`:
+```lua
+imperialCAD = {
+    enable = true,        -- Enable/disable Imperial CAD integration
+    autoRegister = true,  -- Automatically register vehicles on purchase
+}
+```
+
+## How It Works
+
+### Vehicle Registration (`registerVehicleImperialCAD`)
+When a vehicle is registered with Imperial CAD:
+- Retrieves vehicle information (plate, model, make, color)
+- Generates a unique 17-character VIN
+- Sets registration expiration to 1 year from current date
+- Creates insurance policy with unique policy number
+- Links vehicle to owner's character information
+- Stores VIN in the `player_vehicles` database
+
+### VIN Synchronization (`syncVINFromImperialCAD`)
+When syncing VIN from Imperial CAD:
+- Retrieves vehicle data from Imperial CAD by plate number
+- Extracts VIN from Imperial CAD database
+- Updates the `player_vehicles` table with the VIN
+- Provides feedback on success/failure
+
+## Commands
+
+### `/regveh`
+**Description:** Manually register your current vehicle with Imperial CAD
+**Requirements:**
+- Must be sitting in a vehicle
+- Must own the vehicle
+- Imperial CAD integration must be enabled
+
+### `/syncvin`
+**Description:** Sync VIN from Imperial CAD to the vehicle database
+**Requirements:**
+- Must be sitting in a vehicle
+- Must own the vehicle
+- Vehicle must exist in Imperial CAD
+- Imperial CAD integration must be enabled
+
+## API Functions
+
+### `config.registerVehicleImperialCAD(vehicle, playerData)`
+**Parameters:**
+- `vehicle` (number) - Vehicle entity handle
+- `playerData` (table) - Player data from QBCore
+
+**Returns:** `boolean` - Success status
+
+**Description:** Registers a vehicle with Imperial CAD using the CreateVehicleAdvanced export.
+
+### `config.syncVINFromImperialCAD(plate, vehicleId)`
+**Parameters:**
+- `plate` (string) - Vehicle license plate
+- `vehicleId` (number) - Vehicle ID from player_vehicles table
+
+**Returns:** `boolean` - Success status
+
+**Description:** Retrieves VIN from Imperial CAD and updates the player_vehicles database.
+
+## Integration Points
+
+The Imperial CAD integration is automatically triggered at:
+1. `qbx_vehicleshop:server:buyShowroomVehicle` - Cash purchases
+2. `qbx_vehicleshop:server:sellShowroomVehicle` - Sales by dealership employees
+3. `qbx_vehicleshop:server:financeVehicle` - Financed purchases
+4. `qbx_vehicleshop:server:sellfinanceVehicle` - Financed sales by employees
+
+## Notes
+
+- Requires Imperial CAD resource to be started
+- VIN format is 17 uppercase alphanumeric characters
+- Registration state defaults to "SA" (San Andreas)
+- Insurance policy numbers are prefixed with "INS" followed by 7 random digits
+- 1 second delay is used after vehicle spawn to ensure proper entity synchronization
+
+## Troubleshooting
+
+**Vehicle not registering:**
+- Ensure Imperial CAD resource is running
+- Check server console for error messages
+- Verify `config.imperialCAD.enable = true`
+
+**VIN sync failing:**
+- Vehicle must already exist in Imperial CAD
+- Verify plate number matches exactly
+- Check that Imperial CAD's `GetVehicle` export is available
+
+**Database errors:**
+- Ensure VIN column exists in player_vehicles table
+- Run the migration SQL if not already applied

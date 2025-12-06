@@ -120,8 +120,45 @@ return {
         exports["ImperialCAD"]:CreateVehicleAdvanced(vehicleDataPayload, function(success, res)
             if success then
                 lib.print.info(('Vehicle %s registered to Imperial CAD for %s %s'):format(plate, playerData.charinfo.firstname, playerData.charinfo.lastname))
+
+                -- Store VIN in player_vehicles database
+                local vehicleId = Entity(vehicle).state.vehicleid
+                if vehicleId and vin then
+                    MySQL.update('UPDATE player_vehicles SET vin = ? WHERE id = ?', { vin, vehicleId })
+                end
             else
                 lib.print.error(('Failed to register vehicle %s to Imperial CAD: %s'):format(plate, res))
+            end
+        end)
+
+        return true
+    end,
+
+    ---@param plate string Vehicle plate
+    ---@param vehicleId number Vehicle ID from player_vehicles
+    ---@return boolean success
+    syncVINFromImperialCAD = function(plate, vehicleId)
+        if not GetResourceState('ImperialCAD'):find('started') then
+            lib.print.warn('ImperialCAD is not started. VIN sync skipped.')
+            return false
+        end
+
+        -- Clean plate for search
+        local cleanPlate = plate:gsub("%s+", "")
+
+        -- Try to get vehicle from Imperial CAD
+        exports["ImperialCAD"]:GetVehicle(cleanPlate, function(success, vehicleData)
+            if success and vehicleData and vehicleData.vin then
+                -- Update VIN in player_vehicles database
+                MySQL.update('UPDATE player_vehicles SET vin = ? WHERE id = ?', { vehicleData.vin, vehicleId }, function(affectedRows)
+                    if affectedRows > 0 then
+                        lib.print.info(('VIN synced from Imperial CAD for plate %s (ID: %s)'):format(cleanPlate, vehicleId))
+                    else
+                        lib.print.warn(('Failed to update VIN in database for vehicle ID %s'):format(vehicleId))
+                    end
+                end)
+            else
+                lib.print.warn(('Could not retrieve VIN from Imperial CAD for plate %s'):format(cleanPlate))
             end
         end)
 
