@@ -32,6 +32,11 @@ lib.callback.register('qbx_vehicleshop:server:getPlayerVehicles', function(sourc
                 if currentTime > expTime and regStatus == true then
                     MySQL.update('UPDATE player_vehicles SET registration_status = ? WHERE id = ?', {false, veh.id})
                     regStatus = false
+
+                    -- Sync to Imperial CAD
+                    if config.imperialCAD.enable then
+                        config.syncRegistrationStatusToImperialCAD(veh.plate, true)
+                    end
                 end
             end
         end
@@ -139,6 +144,8 @@ RegisterNetEvent('qbx_vehicleshop:server:renewRegistration', function(plate)
     -- Update Imperial CAD if enabled
     if config.imperialCAD.enable then
         config.renewVehicleRegistration(plate, newExpDate)
+        -- Sync valid registration status to Imperial CAD
+        config.syncRegistrationStatusToImperialCAD(plate, false)
     end
 
     exports.qbx_core:Notify(src, string.format('Vehicle registration renewed until %s', newExpDate), 'success')

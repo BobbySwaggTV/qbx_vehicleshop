@@ -163,6 +163,14 @@ RegisterNetEvent('qbx_vehicleshop:server:buyShowroomVehicle', function(vehicle)
             local veh = NetworkGetEntityFromNetworkId(netId)
             if veh and DoesEntityExist(veh) then
                 config.registerVehicleImperialCAD(veh, player.PlayerData, vehicle)
+
+                -- Auto-sync registration status (valid for new vehicles)
+                SetTimeout(2000, function()
+                    local plate = GetVehicleNumberPlateText(veh)
+                    if plate then
+                        config.syncRegistrationStatusToImperialCAD(plate, false)
+                    end
+                end)
             end
         end)
     end
@@ -195,7 +203,8 @@ end
 ---@param playerId string|number
 RegisterNetEvent('qbx_vehicleshop:server:sellShowroomVehicle', function(vehicle, playerId)
     local src = source
-    local target = exports.qbx_core:GetPlayer(tonumber(playerId))
+    local targetPlayerId = tonumber(playerId) --[[@as number]]
+    local target = exports.qbx_core:GetPlayer(targetPlayerId)
 
     if not target then
         return exports.qbx_core:Notify(src, locale('error.Invalid_ID'), 'error')
@@ -236,7 +245,7 @@ RegisterNetEvent('qbx_vehicleshop:server:sellShowroomVehicle', function(vehicle,
         vehicleId
     })
 
-    local netId = SpawnVehicle(playerId, {
+    local netId = SpawnVehicle(targetPlayerId, {
         coords = coords,
         vehicleId = vehicleId
     })
@@ -247,6 +256,14 @@ RegisterNetEvent('qbx_vehicleshop:server:sellShowroomVehicle', function(vehicle,
             local veh = NetworkGetEntityFromNetworkId(netId)
             if veh and DoesEntityExist(veh) then
                 config.registerVehicleImperialCAD(veh, target.PlayerData, vehicle)
+
+                -- Auto-sync registration status (valid for new vehicles)
+                SetTimeout(2000, function()
+                    local plate = GetVehicleNumberPlateText(veh)
+                    if plate then
+                        config.syncRegistrationStatusToImperialCAD(plate, false)
+                    end
+                end)
             end
         end)
     end
@@ -446,6 +463,67 @@ lib.addCommand('syncvin', {
         exports.qbx_core:Notify(source, 'Syncing VIN from Imperial CAD...', 'success')
     else
         exports.qbx_core:Notify(source, 'Failed to sync VIN from Imperial CAD', 'error')
+    end
+end)
+
+-- Sync registration status to Imperial CAD
+lib.addCommand('syncreg', {
+    help = 'Sync vehicle registration status from database to Imperial CAD',
+}, function(source)
+    if not config.imperialCAD.enable then
+        return exports.qbx_core:Notify(source, 'Imperial CAD integration is disabled', 'error')
+    end
+
+    local ped = GetPlayerPed(source)
+    local vehicle = GetVehiclePedIsIn(ped, false)
+
+    if vehicle == 0 then
+        return exports.qbx_core:Notify(source, locale('error.notinveh'), 'error')
+    end
+
+    local plate = GetVehicleNumberPlateText(vehicle)
+    local vehicleId = Entity(vehicle).state.vehicleid or exports.qbx_vehicles:GetVehicleIdByPlate(plate)
+
+    if not vehicleId then
+        return exports.qbx_core:Notify(source, locale('error.notowned'), 'error')
+    end
+
+    local player = exports.qbx_core:GetPlayer(source)
+    local row = exports.qbx_vehicles:GetPlayerVehicle(vehicleId)
+
+    if not row then
+        return exports.qbx_core:Notify(source, locale('error.notowned'), 'error')
+    end
+
+    if row.citizenid ~= player.PlayerData.citizenid then
+        return exports.qbx_core:Notify(source, locale('error.notown'), 'error')
+    end
+
+    -- Get registration data from database
+    local result = MySQL.single.await('SELECT registration_status, registration_expiry FROM player_vehicles WHERE id = ?', {vehicleId})
+
+    if not result then
+        return exports.qbx_core:Notify(source, 'Failed to get registration data', 'error')
+    end
+
+    -- Check if expired
+    local isExpired = false
+    if result.registration_expiry then
+        local expYear, expMonth, expDay = tostring(result.registration_expiry):match("(%d+)-(%d+)-(%d+)")
+        if expYear and expMonth and expDay then
+            local expTime = os.time({year = tonumber(expYear) --[[@as integer]], month = tonumber(expMonth) --[[@as integer]], day = tonumber(expDay) --[[@as integer]]})
+            local currentTime = os.time()
+            isExpired = currentTime > expTime
+        end
+    end
+
+    local success = config.syncRegistrationStatusToImperialCAD(plate, isExpired)
+
+    if success then
+        local status = isExpired and "Expired" or "Valid"
+        exports.qbx_core:Notify(source, string.format('Syncing registration status (%s) to Imperial CAD...', status), 'success')
+    else
+        exports.qbx_core:Notify(source, 'Failed to sync registration status to Imperial CAD', 'error')
     end
 end)
 

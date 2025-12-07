@@ -273,6 +273,14 @@ RegisterNetEvent('qbx_vehicleshop:server:sellfinanceVehicle', function(downPayme
             local veh = NetworkGetEntityFromNetworkId(netId)
             if veh and DoesEntityExist(veh) then
                 config.registerVehicleImperialCAD(veh, target.PlayerData, vehicle)
+
+                -- Auto-sync registration status (valid for new vehicles)
+                SetTimeout(2000, function()
+                    local plate = GetVehicleNumberPlateText(veh)
+                    if plate then
+                        config.syncRegistrationStatusToImperialCAD(plate, false)
+                    end
+                end)
             end
         end)
     end
@@ -361,6 +369,14 @@ RegisterNetEvent('qbx_vehicleshop:server:financeVehicle', function(downPayment, 
             local veh = NetworkGetEntityFromNetworkId(netId)
             if veh and DoesEntityExist(veh) then
                 config.registerVehicleImperialCAD(veh, player.PlayerData, vehicle)
+
+                -- Auto-sync registration status (valid for new vehicles)
+                SetTimeout(2000, function()
+                    local plate = GetVehicleNumberPlateText(veh)
+                    if plate then
+                        config.syncRegistrationStatusToImperialCAD(plate, false)
+                    end
+                end)
             end
         end)
     end
