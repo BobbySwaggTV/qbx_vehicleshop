@@ -8,7 +8,7 @@ lib.callback.register('qbx_vehicleshop:server:getPlayerVehicles', function(sourc
     local player = exports.qbx_core:GetPlayer(source)
     if not player then return nil end
 
-    local vehicles = MySQL.query.await('SELECT id, model, plate FROM player_vehicles WHERE citizenid = ?', {
+    local vehicles = MySQL.query.await('SELECT id, vehicle, plate FROM player_vehicles WHERE citizenid = ?', {
         player.PlayerData.citizenid
     })
 
@@ -41,7 +41,7 @@ lib.callback.register('qbx_vehicleshop:server:getPlayerVehicles', function(sourc
 
         vehiclesWithInfo[#vehiclesWithInfo + 1] = {
             id = veh.id,
-            model = veh.model,
+            model = veh.vehicle,
             plate = veh.plate,
             regExpDate = regExpDate
         }
