@@ -2,6 +2,8 @@ local sharedConfig = require 'config.shared'
 
 if not sharedConfig.registration.enable then return end
 
+local dmvPed = nil
+
 -- Create blip for DMV
 if sharedConfig.registration.blip.enabled then
     local blip = AddBlipForCoord(sharedConfig.registration.zone.x, sharedConfig.registration.zone.y, sharedConfig.registration.zone.z)
@@ -15,28 +17,32 @@ if sharedConfig.registration.blip.enabled then
     EndTextCommandSetBlipName(blip)
 end
 
--- Create ox_lib point for interaction
-local registrationPoint = lib.points.new({
-    coords = sharedConfig.registration.zone,
-    distance = 10,
-})
-
-function registrationPoint:onEnter()
-    lib.showTextUI('[E] Vehicle Registration Renewal', {
-        position = "left-center",
-        icon = 'file-contract',
-    })
-end
-
-function registrationPoint:onExit()
-    lib.hideTextUI()
-end
-
-function registrationPoint:nearby()
-    if self.currentDistance < 2.0 and IsControlJustPressed(0, 38) then -- E key
-        OpenRegistrationMenu()
+-- Spawn DMV NPC
+CreateThread(function()
+    local pedModel = `a_m_y_business_01`
+    RequestModel(pedModel)
+    while not HasModelLoaded(pedModel) do
+        Wait(0)
     end
-end
+
+    dmvPed = CreatePed(4, pedModel, sharedConfig.registration.zone.x, sharedConfig.registration.zone.y, sharedConfig.registration.zone.z - 1.0, sharedConfig.registration.npcHeading or 0.0, false, true)
+    SetEntityInvincible(dmvPed, true)
+    SetBlockingOfNonTemporaryEvents(dmvPed, true)
+    FreezeEntityPosition(dmvPed, true)
+
+    -- Add ox_target to the NPC
+    exports.ox_target:addLocalEntity(dmvPed, {
+        {
+            name = 'dmv_registration',
+            icon = 'fas fa-file-contract',
+            label = 'Vehicle Registration Renewal',
+            onSelect = function()
+                OpenRegistrationMenu()
+            end,
+            distance = 2.5
+        }
+    })
+end)
 
 function OpenRegistrationMenu()
     -- Get player's vehicles from server
@@ -122,3 +128,11 @@ function RenewRegistration(vehicleInfo)
         OpenRegistrationMenu()
     end
 end
+
+-- Cleanup on resource stop
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    if dmvPed and DoesEntityExist(dmvPed) then
+        DeleteEntity(dmvPed)
+    end
+end)

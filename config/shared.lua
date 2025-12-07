@@ -10,6 +10,7 @@ return {
         enable = true, -- Enable vehicle registration renewal system
         cost = 500, -- Cost to renew registration
         zone = vec3(-551.05, -191.37, 38.22), -- DMV location for registration renewal
+        npcHeading = 223.61, -- Heading direction for the DMV NPC
         blip = {
             enabled = true,
             sprite = 606, -- DMV blip sprite
