@@ -67,7 +67,7 @@ function OpenRegistrationMenu()
             elseif veh.regExpDate and veh.regExpDate ~= 'Unknown' then
                 -- Convert to string if it's a number (timestamp)
                 local dateStr = tostring(veh.regExpDate)
-                
+
                 -- Check if registration is expired or expiring soon
                 local expYear, expMonth, expDay = dateStr:match("(%d+)-(%d+)-(%d+)")
                 if expYear and expMonth and expDay then
