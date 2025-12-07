@@ -142,23 +142,31 @@ return {
                 local vehicleId = Entity(vehicle).state.vehicleid
                 if vehicleId then
                     local cleanPlate = plate:gsub("%s+", "")
-                    -- Use CheckPlate to get the actual VIN from Imperial CAD
-                    exports["ImperialCAD"]:CheckPlate({
-                        plate = cleanPlate
-                    }, function(checkSuccess, checkRes)
-                        if checkSuccess then
-                            local result = json.decode(checkRes)
-                            if result and result.response and result.response.vin then
-                                local retrievedVin = result.response.vin
-                                MySQL.update('UPDATE player_vehicles SET vin = ? WHERE id = ?', { retrievedVin, vehicleId }, function(affectedRows)
-                                    if affectedRows > 0 then
-                                        lib.print.info(('VIN stored in database for vehicle ID %s: %s'):format(vehicleId, retrievedVin))
-                                    end
-                                end)
+                    -- Wait a moment for Imperial CAD to process the registration
+                    SetTimeout(2000, function()
+                        -- Use CheckPlate to get the actual VIN from Imperial CAD
+                        exports["ImperialCAD"]:CheckPlate({
+                            plate = cleanPlate
+                        }, function(checkSuccess, checkRes)
+                            if checkSuccess then
+                                lib.print.info(('CheckPlate response for %s: %s'):format(cleanPlate, checkRes))
+                                local result = json.decode(checkRes)
+                                if result and result.response and result.response.vin then
+                                    local retrievedVin = result.response.vin
+                                    MySQL.update('UPDATE player_vehicles SET vin = ? WHERE id = ?', { retrievedVin, vehicleId }, function(affectedRows)
+                                        if affectedRows > 0 then
+                                            lib.print.info(('VIN stored in database for vehicle ID %s: %s'):format(vehicleId, retrievedVin))
+                                        else
+                                            lib.print.warn(('Database update failed for vehicle ID %s'):format(vehicleId))
+                                        end
+                                    end)
+                                else
+                                    lib.print.warn(('No VIN in response for plate %s. Response structure: %s'):format(cleanPlate, checkRes))
+                                end
                             else
-                                lib.print.warn(('Could not retrieve VIN from Imperial CAD for plate %s'):format(cleanPlate))
+                                lib.print.error(('CheckPlate failed for %s: %s'):format(cleanPlate, checkRes))
                             end
-                        end
+                        end)
                     end)
                 end
             else
