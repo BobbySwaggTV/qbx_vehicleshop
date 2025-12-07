@@ -142,6 +142,14 @@ RegisterNetEvent('qbx_vehicleshop:server:buyShowroomVehicle', function(vehicle)
         citizenid = player.PlayerData.citizenid,
     })
 
+    -- Set initial registration (1 year from purchase)
+    local regExpDate = os.date("%Y-%m-%d", os.time() + 31536000)
+    MySQL.update('UPDATE player_vehicles SET registration_status = ?, registration_expiry = ? WHERE id = ?', {
+        true,
+        regExpDate,
+        vehicleId
+    })
+
     exports.qbx_core:Notify(src, locale('success.purchased'), 'success')
 
     local netId = SpawnVehicle(src, {
@@ -218,6 +226,14 @@ RegisterNetEvent('qbx_vehicleshop:server:sellShowroomVehicle', function(vehicle,
     local vehicleId = exports.qbx_vehicles:CreatePlayerVehicle({
         model = vehicle,
         citizenid = cid,
+    })
+
+    -- Set initial registration (1 year from purchase)
+    local regExpDate = os.date("%Y-%m-%d", os.time() + 31536000)
+    MySQL.update('UPDATE player_vehicles SET registration_status = ?, registration_expiry = ? WHERE id = ?', {
+        true,
+        regExpDate,
+        vehicleId
     })
 
     local netId = SpawnVehicle(playerId, {

@@ -254,6 +254,14 @@ RegisterNetEvent('qbx_vehicleshop:server:sellfinanceVehicle', function(downPayme
         }
     })
 
+    -- Set initial registration (1 year from purchase)
+    local regExpDate = os.date("%Y-%m-%d", os.time() + 31536000)
+    MySQL.update('UPDATE player_vehicles SET registration_status = ?, registration_expiry = ? WHERE id = ?', {
+        true,
+        regExpDate,
+        vehicleId
+    })
+
     local netId = SpawnVehicle(playerId, {
         coords = coords,
         vehicleId = vehicleId
@@ -330,6 +338,14 @@ RegisterNetEvent('qbx_vehicleshop:server:financeVehicle', function(downPayment, 
             paymentsLeft = paymentAmount,
             timer = timer,
         }
+    })
+
+    -- Set initial registration (1 year from purchase)
+    local regExpDate = os.date("%Y-%m-%d", os.time() + 31536000)
+    MySQL.update('UPDATE player_vehicles SET registration_status = ?, registration_expiry = ? WHERE id = ?', {
+        true,
+        regExpDate,
+        vehicleId
     })
 
     exports.qbx_core:Notify(src, locale('success.purchased'), 'success')

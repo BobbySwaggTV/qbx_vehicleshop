@@ -8,42 +8,40 @@ lib.callback.register('qbx_vehicleshop:server:getPlayerVehicles', function(sourc
     local player = exports.qbx_core:GetPlayer(source)
     if not player then return nil end
 
-    local vehicles = MySQL.query.await('SELECT id, vehicle, plate FROM player_vehicles WHERE citizenid = ?', {
+    local vehicles = MySQL.query.await('SELECT id, vehicle, plate, registration_status, registration_expiry FROM player_vehicles WHERE citizenid = ?', {
         player.PlayerData.citizenid
     })
 
     if not vehicles or #vehicles == 0 then return {} end
 
-    -- Get registration info from Imperial CAD if enabled
+    -- Process registration info
     local vehiclesWithInfo = {}
     for i = 1, #vehicles do
         local veh = vehicles[i]
-        local regExpDate = 'Unknown'
+        local regExpDate = veh.registration_expiry or 'Unknown'
+        local regStatus = veh.registration_status
 
-        if config.imperialCAD.enable then
-            local cleanPlate = veh.plate:gsub("%s+", "")
-            local promise = promise.new()
+        -- Check if registration is expired
+        if regExpDate and regExpDate ~= 'Unknown' then
+            local expYear, expMonth, expDay = tostring(regExpDate):match("(%d+)-(%d+)-(%d+)")
+            if expYear and expMonth and expDay then
+                local expTime = os.time({year = tonumber(expYear) --[[@as integer]], month = tonumber(expMonth) --[[@as integer]], day = tonumber(expDay) --[[@as integer]]})
+                local currentTime = os.time()
 
-            exports["ImperialCAD"]:CheckPlate({
-                plate = cleanPlate
-            }, function(success, res)
-                if success then
-                    local result = json.decode(res)
-                    if result and result.response and result.response.regExpDate then
-                        regExpDate = result.response.regExpDate
-                    end
+                -- Auto-update status if expired
+                if currentTime > expTime and regStatus == true then
+                    MySQL.update('UPDATE player_vehicles SET registration_status = ? WHERE id = ?', {false, veh.id})
+                    regStatus = false
                 end
-                promise:resolve()
-            end)
-
-            Citizen.Await(promise)
+            end
         end
 
         vehiclesWithInfo[#vehiclesWithInfo + 1] = {
             id = veh.id,
             model = veh.vehicle,
             plate = veh.plate,
-            regExpDate = regExpDate
+            regExpDate = regExpDate,
+            regStatus = regStatus
         }
     end
 
@@ -130,6 +128,13 @@ RegisterNetEvent('qbx_vehicleshop:server:renewRegistration', function(plate)
 
     -- Calculate new expiration date (1 year from now)
     local newExpDate = os.date("%Y-%m-%d", os.time() + 31536000) --[[@as string]]
+
+    -- Update database
+    MySQL.update('UPDATE player_vehicles SET registration_status = ?, registration_expiry = ? WHERE id = ?', {
+        true,
+        newExpDate,
+        vehicle.id
+    })
 
     -- Update Imperial CAD if enabled
     if config.imperialCAD.enable then

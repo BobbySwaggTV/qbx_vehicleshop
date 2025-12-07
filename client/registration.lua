@@ -58,8 +58,12 @@ function OpenRegistrationMenu()
             local statusColor = 'green'
             local statusText = 'Valid'
 
-            -- Check if registration is expired
-            if veh.regExpDate and veh.regExpDate ~= 'Unknown' then
+            -- Check registration status from database
+            if veh.regStatus == false or veh.regStatus == 0 then
+                statusColor = 'red'
+                statusText = 'Invalid'
+            elseif veh.regExpDate and veh.regExpDate ~= 'Unknown' then
+                -- Check if registration is expired or expiring soon
                 local expYear, expMonth, expDay = veh.regExpDate:match("(%d+)-(%d+)-(%d+)")
                 if expYear and expMonth and expDay then
                     local expTime = os.time({year = tonumber(expYear) --[[@as integer]], month = tonumber(expMonth) --[[@as integer]], day = tonumber(expDay) --[[@as integer]]})
