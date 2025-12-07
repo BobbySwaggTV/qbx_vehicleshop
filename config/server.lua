@@ -70,8 +70,9 @@ return {
 
     ---@param plate string Vehicle plate
     ---@param isExpired boolean Whether registration is expired
+    ---@param playerSource number? Optional player source (if player is online)
     ---@return boolean success
-    syncRegistrationStatusToImperialCAD = function(plate, isExpired)
+    syncRegistrationStatusToImperialCAD = function(plate, isExpired, playerSource)
         if not GetResourceState('ImperialCAD'):find('started') then
             lib.print.warn('ImperialCAD is not started. Registration sync skipped.')
             return false
@@ -86,11 +87,25 @@ return {
             return false
         end
 
-        -- Get player data
-        local player = exports.qbx_core:GetPlayer(result.citizenid)
-        if not player then
-            lib.print.warn(('Player with citizenid %s not found'):format(result.citizenid))
-            return false
+        -- Get player data - either from online player or fetch from database
+        local playerData
+        if playerSource then
+            local player = exports.qbx_core:GetPlayer(playerSource)
+            if player then
+                playerData = player.PlayerData
+            end
+        end
+
+        -- If player not online or no source provided, fetch from database
+        if not playerData then
+            local playerInfo = MySQL.single.await('SELECT discord FROM players WHERE citizenid = ?', {result.citizenid})
+            if not playerInfo then
+                lib.print.warn(('Player with citizenid %s not found in database'):format(result.citizenid))
+                return false
+            end
+            playerData = {
+                discord = playerInfo.discord
+            }
         end
 
         -- Get vehicle info from Imperial CAD
@@ -108,7 +123,7 @@ return {
         local regStatus = isExpired and "Expired" or "Valid"
 
         local vehicleData = {
-            users_discordID = player.PlayerData.discord or "",
+            users_discordID = playerData.discord or "",
             vehicle_plate = cleanPlate,
             vehicle_model = result.vehicle,
             vehicle_color = result.mods and json.decode(result.mods).color1 or "Unknown",

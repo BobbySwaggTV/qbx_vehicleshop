@@ -517,7 +517,7 @@ lib.addCommand('syncreg', {
         end
     end
 
-    local success = config.syncRegistrationStatusToImperialCAD(plate, isExpired)
+    local success = config.syncRegistrationStatusToImperialCAD(plate, isExpired, source)
 
     if success then
         local status = isExpired and "Expired" or "Valid"
