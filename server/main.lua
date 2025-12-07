@@ -521,9 +521,9 @@ lib.addCommand('syncreg', {
 
     if success then
         local status = isExpired and "Expired" or "Valid"
-        exports.qbx_core:Notify(source, string.format('Syncing registration status (%s) to Imperial CAD...', status), 'success')
+        exports.qbx_core:Notify(source, string.format('Registration status (%s) synced to Imperial CAD!', status), 'success')
     else
-        exports.qbx_core:Notify(source, 'Failed to sync registration status to Imperial CAD', 'error')
+        exports.qbx_core:Notify(source, 'Vehicle already exists in Imperial CAD. Delete it from CAD first, then try /syncreg again.', 'error')
     end
 end)
 

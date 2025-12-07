@@ -95,26 +95,16 @@ return {
 
         -- Get vehicle info from Imperial CAD
         local success, vehicleInfo = pcall(exports["ImperialCAD"].CheckPlate, exports["ImperialCAD"], cleanPlate)
-        if not success or not vehicleInfo then
-            lib.print.warn(('Failed to get vehicle info from Imperial CAD for plate %s'):format(cleanPlate))
+        
+        if success and vehicleInfo then
+            -- Vehicle exists in Imperial CAD
+            lib.print.warn(('Vehicle with plate %s already exists in Imperial CAD'):format(cleanPlate))
+            lib.print.warn('Imperial CAD DeleteVehicle endpoint is not available yet.')
+            lib.print.info('To update registration status: 1) Delete the vehicle in Imperial CAD interface, 2) Run /syncreg again')
             return false
         end
 
-        -- Try to delete the old record (when endpoint becomes available)
-        pcall(exports["ImperialCAD"].DeleteVehicle, exports["ImperialCAD"], {
-            users_discordID = player.PlayerData.discord or "",
-            vin = vehicleInfo.vin or result.vin or ""
-        }, function(deleteSuccess, deleteRes)
-            if deleteSuccess then
-                lib.print.info(('Deleted old vehicle record for plate %s from Imperial CAD'):format(cleanPlate))
-            else
-                lib.print.warn(('Failed to delete vehicle from Imperial CAD (endpoint may not be available yet): %s'):format(deleteRes or 'unknown error'))
-            end
-        end)
-
-        -- Recreate with updated registration status
-        Wait(1000) -- Wait for deletion to process
-
+        -- Vehicle doesn't exist, create it with current registration status
         local regStatus = isExpired and "Expired" or "Valid"
 
         local vehicleData = {
@@ -122,21 +112,28 @@ return {
             vehicle_plate = cleanPlate,
             vehicle_model = result.vehicle,
             vehicle_color = result.mods and json.decode(result.mods).color1 or "Unknown",
-            vehicle_vin = vehicleInfo.vin or result.vin or "",
+            vehicle_vin = result.vin or "",
             vehicle_registration = regStatus,
-            vehicle_insurance = vehicleInfo.insurance or "None",
-            vehicle_notes = vehicleInfo.notes or ""
+            vehicle_insurance = "None",
+            vehicle_notes = ""
         }
 
+        lib.print.info(('Creating vehicle in Imperial CAD with registration status: %s'):format(regStatus))
+        
         local createSuccess = pcall(exports["ImperialCAD"].CreateVehicleAdvanced, exports["ImperialCAD"], vehicleData, function(created, res)
             if created then
                 lib.print.info(('Successfully synced registration status (%s) to Imperial CAD for plate %s'):format(regStatus, cleanPlate))
             else
-                lib.print.warn(('Failed to sync registration to Imperial CAD: %s'):format(res or 'unknown error'))
+                lib.print.error(('Failed to sync registration to Imperial CAD: %s'):format(res or 'unknown error'))
             end
         end)
 
-        return createSuccess
+        if not createSuccess then
+            lib.print.error('Failed to call CreateVehicleAdvanced export')
+            return false
+        end
+
+        return true
     end,
 
     ---@param vehicle number Vehicle entity
