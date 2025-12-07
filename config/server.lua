@@ -51,17 +51,16 @@ return {
 
     ---@param vehicle number Vehicle entity
     ---@param playerData table Player data
+    ---@param modelName string? Vehicle model name (optional, will be derived from entity if not provided)
     ---@return boolean success
-    registerVehicleImperialCAD = function(vehicle, playerData)
+    registerVehicleImperialCAD = function(vehicle, playerData, modelName)
         if not GetResourceState('ImperialCAD'):find('started') then
             lib.print.warn('ImperialCAD is not started. Vehicle registration skipped.')
             return false
         end
 
         local plate = GetVehicleNumberPlateText(vehicle)
-        local model = GetEntityModel(vehicle)
-        local modelName = GetDisplayNameFromVehicleModel(model):lower()
-        local vehicleData = COREVEHICLES[modelName]
+        local vehicleData = modelName and COREVEHICLES[modelName] or nil
 
         -- Get vehicle colors
         local primaryColor, secondaryColor = GetVehicleColours(vehicle)

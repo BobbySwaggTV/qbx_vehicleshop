@@ -264,7 +264,7 @@ RegisterNetEvent('qbx_vehicleshop:server:sellfinanceVehicle', function(downPayme
         SetTimeout(1000, function() -- Small delay to ensure vehicle is fully spawned
             local veh = NetworkGetEntityFromNetworkId(netId)
             if veh and DoesEntityExist(veh) then
-                config.registerVehicleImperialCAD(veh, target.PlayerData)
+                config.registerVehicleImperialCAD(veh, target.PlayerData, vehicle)
             end
         end)
     end
@@ -344,7 +344,7 @@ RegisterNetEvent('qbx_vehicleshop:server:financeVehicle', function(downPayment, 
         SetTimeout(1000, function() -- Small delay to ensure vehicle is fully spawned
             local veh = NetworkGetEntityFromNetworkId(netId)
             if veh and DoesEntityExist(veh) then
-                config.registerVehicleImperialCAD(veh, player.PlayerData)
+                config.registerVehicleImperialCAD(veh, player.PlayerData, vehicle)
             end
         end)
     end

@@ -154,7 +154,7 @@ RegisterNetEvent('qbx_vehicleshop:server:buyShowroomVehicle', function(vehicle)
         SetTimeout(1000, function() -- Small delay to ensure vehicle is fully spawned
             local veh = NetworkGetEntityFromNetworkId(netId)
             if veh and DoesEntityExist(veh) then
-                config.registerVehicleImperialCAD(veh, player.PlayerData)
+                config.registerVehicleImperialCAD(veh, player.PlayerData, vehicle)
             end
         end)
     end
@@ -230,7 +230,7 @@ RegisterNetEvent('qbx_vehicleshop:server:sellShowroomVehicle', function(vehicle,
         SetTimeout(1000, function() -- Small delay to ensure vehicle is fully spawned
             local veh = NetworkGetEntityFromNetworkId(netId)
             if veh and DoesEntityExist(veh) then
-                config.registerVehicleImperialCAD(veh, target.PlayerData)
+                config.registerVehicleImperialCAD(veh, target.PlayerData, vehicle)
             end
         end)
     end
@@ -382,7 +382,7 @@ lib.addCommand('regveh', {
         return exports.qbx_core:Notify(source, locale('error.notown'), 'error')
     end
 
-    local success = config.registerVehicleImperialCAD(vehicle, player.PlayerData)
+    local success = config.registerVehicleImperialCAD(vehicle, player.PlayerData, row.model)
 
     if success then
         exports.qbx_core:Notify(source, 'Vehicle successfully registered with Imperial CAD', 'success')
