@@ -69,15 +69,6 @@ function OpenRegistrationMenu()
                 local dateStr = tostring(veh.regExpDate)
                 displayDate = dateStr
 
-                -- If it's a timestamp (very large number), convert it
-                if tonumber(dateStr) and tonumber(dateStr) > 10000000000 then
-                    local timestamp = tonumber(dateStr)
-                    -- Convert milliseconds to seconds
-                    timestamp = math.floor(timestamp / 1000)
-                    displayDate = os.date("%Y-%m-%d", timestamp) --[[@as string]]
-                    dateStr = displayDate
-                end
-
                 -- Check if registration is expired or expiring soon
                 local expYear, expMonth, expDay = tostring(dateStr):match("(%d+)-(%d+)-(%d+)")
                 if expYear and expMonth and expDay then
