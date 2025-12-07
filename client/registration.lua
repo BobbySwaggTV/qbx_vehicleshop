@@ -57,23 +57,46 @@ function OpenRegistrationMenu()
             local veh = vehicles[i]
             local statusColor = 'green'
             local statusText = 'Valid'
+            local timeRemaining = 'N/A'
 
             -- Check registration status from database
             if veh.regStatus == false or veh.regStatus == 0 then
                 statusColor = 'red'
                 statusText = 'Invalid'
+                timeRemaining = 'Expired'
             elseif veh.regExpDate and veh.regExpDate ~= 'Unknown' then
                 -- Check if registration is expired or expiring soon
                 local expYear, expMonth, expDay = veh.regExpDate:match("(%d+)-(%d+)-(%d+)")
                 if expYear and expMonth and expDay then
                     local expTime = os.time({year = tonumber(expYear) --[[@as integer]], month = tonumber(expMonth) --[[@as integer]], day = tonumber(expDay) --[[@as integer]]})
                     local currentTime = os.time()
+                    local timeDiff = expTime - currentTime
+
                     if currentTime > expTime then
                         statusColor = 'red'
                         statusText = 'Expired'
-                    elseif (expTime - currentTime) < (30 * 24 * 60 * 60) then -- Less than 30 days
-                        statusColor = 'yellow'
-                        statusText = 'Expiring Soon'
+                        timeRemaining = 'Expired'
+                    else
+                        -- Calculate days remaining
+                        local daysRemaining = math.floor(timeDiff / (24 * 60 * 60))
+
+                        if daysRemaining < 30 then
+                            statusColor = 'yellow'
+                            statusText = 'Expiring Soon'
+                        end
+
+                        -- Format time remaining
+                        if daysRemaining >= 365 then
+                            local years = math.floor(daysRemaining / 365)
+                            local days = daysRemaining % 365
+                            timeRemaining = string.format('%d year%s, %d day%s', years, years > 1 and 's' or '', days, days ~= 1 and 's' or '')
+                        elseif daysRemaining >= 30 then
+                            local months = math.floor(daysRemaining / 30)
+                            local days = daysRemaining % 30
+                            timeRemaining = string.format('%d month%s, %d day%s', months, months > 1 and 's' or '', days, days ~= 1 and 's' or '')
+                        else
+                            timeRemaining = string.format('%d day%s', daysRemaining, daysRemaining ~= 1 and 's' or '')
+                        end
                     end
                 end
             end
@@ -85,6 +108,7 @@ function OpenRegistrationMenu()
                 iconColor = statusColor,
                 metadata = {
                     {label = 'Status', value = statusText},
+                    {label = 'Time Remaining', value = timeRemaining},
                     {label = 'Renewal Cost', value = '$' .. lib.math.groupdigits(sharedConfig.registration.cost)}
                 },
                 onSelect = function()
