@@ -121,10 +121,28 @@ return {
             if success then
                 lib.print.info(('Vehicle %s registered to Imperial CAD for %s %s'):format(plate, playerData.charinfo.firstname, playerData.charinfo.lastname))
 
-                -- Store VIN in player_vehicles database
+                -- Retrieve the VIN from Imperial CAD after registration and store in database
                 local vehicleId = Entity(vehicle).state.vehicleid
-                if vehicleId and vin then
-                    MySQL.update('UPDATE player_vehicles SET vin = ? WHERE id = ?', { vin, vehicleId })
+                if vehicleId then
+                    local cleanPlate = plate:gsub("%s+", "")
+                    -- Use CheckPlate to get the actual VIN from Imperial CAD
+                    exports["ImperialCAD"]:CheckPlate({
+                        plate = cleanPlate
+                    }, function(checkSuccess, checkRes)
+                        if checkSuccess then
+                            local result = json.decode(checkRes)
+                            if result and result.response and result.response.vin then
+                                local retrievedVin = result.response.vin
+                                MySQL.update('UPDATE player_vehicles SET vin = ? WHERE id = ?', { retrievedVin, vehicleId }, function(affectedRows)
+                                    if affectedRows > 0 then
+                                        lib.print.info(('VIN stored in database for vehicle ID %s: %s'):format(vehicleId, retrievedVin))
+                                    end
+                                end)
+                            else
+                                lib.print.warn(('Could not retrieve VIN from Imperial CAD for plate %s'):format(cleanPlate))
+                            end
+                        end
+                    end)
                 end
             else
                 lib.print.error(('Failed to register vehicle %s to Imperial CAD: %s'):format(plate, res))
@@ -146,19 +164,27 @@ return {
         -- Clean plate for search
         local cleanPlate = plate:gsub("%s+", "")
 
-        -- Try to get vehicle from Imperial CAD
-        exports["ImperialCAD"]:GetVehicle(cleanPlate, function(success, vehicleData)
-            if success and vehicleData and vehicleData.vin then
-                -- Update VIN in player_vehicles database
-                MySQL.update('UPDATE player_vehicles SET vin = ? WHERE id = ?', { vehicleData.vin, vehicleId }, function(affectedRows)
-                    if affectedRows > 0 then
-                        lib.print.info(('VIN synced from Imperial CAD for plate %s (ID: %s)'):format(cleanPlate, vehicleId))
-                    else
-                        lib.print.warn(('Failed to update VIN in database for vehicle ID %s'):format(vehicleId))
-                    end
-                end)
+        -- Use CheckPlate to get vehicle data from Imperial CAD
+        exports["ImperialCAD"]:CheckPlate({
+            plate = cleanPlate
+        }, function(success, res)
+            if success then
+                local result = json.decode(res)
+                if result and result.response and result.response.vin then
+                    local vin = result.response.vin
+                    -- Update VIN in player_vehicles database
+                    MySQL.update('UPDATE player_vehicles SET vin = ? WHERE id = ?', { vin, vehicleId }, function(affectedRows)
+                        if affectedRows > 0 then
+                            lib.print.info(('VIN synced from Imperial CAD for plate %s (ID: %s): %s'):format(cleanPlate, vehicleId, vin))
+                        else
+                            lib.print.warn(('Failed to update VIN in database for vehicle ID %s'):format(vehicleId))
+                        end
+                    end)
+                else
+                    lib.print.warn(('No VIN found in Imperial CAD response for plate %s'):format(cleanPlate))
+                end
             else
-                lib.print.warn(('Could not retrieve VIN from Imperial CAD for plate %s'):format(cleanPlate))
+                lib.print.warn(('Could not retrieve vehicle data from Imperial CAD for plate %s'):format(cleanPlate))
             end
         end)
 
