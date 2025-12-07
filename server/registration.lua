@@ -18,12 +18,12 @@ lib.callback.register('qbx_vehicleshop:server:getPlayerVehicles', function(sourc
     local vehiclesWithInfo = {}
     for i = 1, #vehicles do
         local veh = vehicles[i]
-        local regExpDate = veh.registration_expiry or 'Unknown'
+        local regExpDate = veh.registration_expiry and tostring(veh.registration_expiry) or 'Unknown'
         local regStatus = veh.registration_status
 
         -- Check if registration is expired
         if regExpDate and regExpDate ~= 'Unknown' then
-            local expYear, expMonth, expDay = tostring(regExpDate):match("(%d+)-(%d+)-(%d+)")
+            local expYear, expMonth, expDay = regExpDate:match("(%d+)-(%d+)-(%d+)")
             if expYear and expMonth and expDay then
                 local expTime = os.time({year = tonumber(expYear) --[[@as integer]], month = tonumber(expMonth) --[[@as integer]], day = tonumber(expDay) --[[@as integer]]})
                 local currentTime = os.time()
