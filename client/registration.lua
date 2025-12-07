@@ -65,8 +65,11 @@ function OpenRegistrationMenu()
                 statusText = 'Invalid'
                 timeRemaining = 'Expired'
             elseif veh.regExpDate and veh.regExpDate ~= 'Unknown' then
+                -- Convert to string if it's a number (timestamp)
+                local dateStr = tostring(veh.regExpDate)
+                
                 -- Check if registration is expired or expiring soon
-                local expYear, expMonth, expDay = veh.regExpDate:match("(%d+)-(%d+)-(%d+)")
+                local expYear, expMonth, expDay = dateStr:match("(%d+)-(%d+)-(%d+)")
                 if expYear and expMonth and expDay then
                     local expTime = os.time({year = tonumber(expYear) --[[@as integer]], month = tonumber(expMonth) --[[@as integer]], day = tonumber(expDay) --[[@as integer]]})
                     local currentTime = os.time()
@@ -98,12 +101,15 @@ function OpenRegistrationMenu()
                             timeRemaining = string.format('%d day%s', daysRemaining, daysRemaining ~= 1 and 's' or '')
                         end
                     end
+                else
+                    -- If date format doesn't match, try to handle timestamp
+                    timeRemaining = 'Invalid Date Format'
                 end
             end
 
             options[#options + 1] = {
                 title = veh.model or 'Unknown Vehicle',
-                description = string.format('Plate: %s | Expires: %s', veh.plate, veh.regExpDate or 'Unknown'),
+                description = string.format('Plate: %s | Expires: %s', veh.plate, veh.regExpDate and tostring(veh.regExpDate) or 'Unknown'),
                 icon = 'car',
                 iconColor = statusColor,
                 metadata = {
