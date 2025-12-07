@@ -16,13 +16,15 @@ shared_script {
 client_scripts {
     '@qbx_core/modules/playerdata.lua',
     'client/main.lua',
+    'client/registration.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
     'server/utils.lua',
-    'server/finance.lua'
+    'server/finance.lua',
+    'server/registration.lua',
 }
 
 files {

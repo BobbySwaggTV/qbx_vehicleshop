@@ -49,6 +49,33 @@ return {
         return player.Functions.RemoveMoney(account, amount, reason)
     end,
 
+    ---@param plate string Vehicle plate
+    ---@param regExpDate string New registration expiration date
+    ---@return boolean success
+    renewVehicleRegistration = function(plate, regExpDate)
+        if not GetResourceState('ImperialCAD'):find('started') then
+            lib.print.warn('ImperialCAD is not started. Registration renewal skipped.')
+            return false
+        end
+
+        local cleanPlate = plate:gsub("%s+", "")
+
+        -- Update vehicle registration in Imperial CAD
+        exports["ImperialCAD"]:UpdateVehicle({
+            plate = cleanPlate,
+            regStatus = "Valid",
+            regExpDate = regExpDate
+        }, function(success, res)
+            if success then
+                lib.print.info(('Vehicle registration renewed in Imperial CAD for plate %s until %s'):format(cleanPlate, regExpDate))
+            else
+                lib.print.error(('Failed to update vehicle registration in Imperial CAD for plate %s: %s'):format(cleanPlate, res))
+            end
+        end)
+
+        return true
+    end,
+
     ---@param vehicle number Vehicle entity
     ---@param playerData table Player data
     ---@param modelName string? Vehicle model name (optional, will be derived from entity if not provided)

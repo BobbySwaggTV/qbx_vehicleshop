@@ -6,6 +6,19 @@ return {
         zone = vec3(-29.53, -1103.67, 26.42), -- Where the finance menu is located
     },
 
+    registration = {
+        enable = true, -- Enable vehicle registration renewal system
+        cost = 500, -- Cost to renew registration
+        zone = vec3(-551.05, -191.37, 38.22), -- DMV location for registration renewal
+        blip = {
+            enabled = true,
+            sprite = 606, -- DMV blip sprite
+            color = 0,
+            scale = 0.8,
+            label = "DMV - Vehicle Registration"
+        }
+    },
+
     enableFreeUseBuy = true, -- Allows players to buy from NPC shops
     enableTestDrive = true,
 
