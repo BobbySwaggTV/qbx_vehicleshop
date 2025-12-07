@@ -36,6 +36,8 @@ lib.callback.register('qbx_vehicleshop:server:getPlayerVehicles', function(sourc
         end
 
         local regStatus = veh.registration_status
+        local daysRemaining = nil
+        local isExpired = false
 
         -- Check if registration is expired
         if regExpDate and regExpDate ~= 'Unknown' then
@@ -43,16 +45,23 @@ lib.callback.register('qbx_vehicleshop:server:getPlayerVehicles', function(sourc
             if expYear and expMonth and expDay then
                 local expTime = os.time({year = tonumber(expYear) --[[@as integer]], month = tonumber(expMonth) --[[@as integer]], day = tonumber(expDay) --[[@as integer]]})
                 local currentTime = os.time()
+                local timeDiff = expTime - currentTime
 
                 -- Auto-update status if expired
                 if currentTime > expTime and regStatus == true then
                     MySQL.update('UPDATE player_vehicles SET registration_status = ? WHERE id = ?', {false, veh.id})
                     regStatus = false
+                    isExpired = true
 
                     -- Sync to Imperial CAD
                     if config.imperialCAD.enable then
                         config.syncRegistrationStatusToImperialCAD(veh.plate, true)
                     end
+                elseif currentTime > expTime then
+                    isExpired = true
+                else
+                    -- Calculate days remaining
+                    daysRemaining = math.floor(timeDiff / (24 * 60 * 60))
                 end
             end
         end
@@ -62,7 +71,9 @@ lib.callback.register('qbx_vehicleshop:server:getPlayerVehicles', function(sourc
             model = veh.vehicle,
             plate = veh.plate,
             regExpDate = regExpDate,
-            regStatus = regStatus
+            regStatus = regStatus,
+            daysRemaining = daysRemaining,
+            isExpired = isExpired
         }
     end
 

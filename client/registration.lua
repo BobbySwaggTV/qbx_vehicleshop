@@ -69,41 +69,32 @@ function OpenRegistrationMenu()
                 local dateStr = tostring(veh.regExpDate)
                 displayDate = dateStr
 
-                -- Check if registration is expired or expiring soon
-                local expYear, expMonth, expDay = tostring(dateStr):match("(%d+)-(%d+)-(%d+)")
-                if expYear and expMonth and expDay then
-                    local expTime = os.time({year = tonumber(expYear) --[[@as integer]], month = tonumber(expMonth) --[[@as integer]], day = tonumber(expDay) --[[@as integer]]})
-                    local currentTime = os.time()
-                    local timeDiff = expTime - currentTime
+                -- Use server-calculated time remaining
+                if veh.isExpired then
+                    statusColor = 'red'
+                    statusText = 'Expired'
+                    timeRemaining = 'Expired'
+                elseif veh.daysRemaining then
+                    local daysRemaining = veh.daysRemaining
 
-                    if currentTime > expTime then
-                        statusColor = 'red'
-                        statusText = 'Expired'
-                        timeRemaining = 'Expired'
+                    if daysRemaining < 30 then
+                        statusColor = 'yellow'
+                        statusText = 'Expiring Soon'
+                    end
+
+                    -- Format time remaining
+                    if daysRemaining >= 365 then
+                        local years = math.floor(daysRemaining / 365)
+                        local days = daysRemaining % 365
+                        timeRemaining = string.format('%d year%s, %d day%s', years, years > 1 and 's' or '', days, days ~= 1 and 's' or '')
+                    elseif daysRemaining >= 30 then
+                        local months = math.floor(daysRemaining / 30)
+                        local days = daysRemaining % 30
+                        timeRemaining = string.format('%d month%s, %d day%s', months, months > 1 and 's' or '', days, days ~= 1 and 's' or '')
                     else
-                        -- Calculate days remaining
-                        local daysRemaining = math.floor(timeDiff / (24 * 60 * 60))
-
-                        if daysRemaining < 30 then
-                            statusColor = 'yellow'
-                            statusText = 'Expiring Soon'
-                        end
-
-                        -- Format time remaining
-                        if daysRemaining >= 365 then
-                            local years = math.floor(daysRemaining / 365)
-                            local days = daysRemaining % 365
-                            timeRemaining = string.format('%d year%s, %d day%s', years, years > 1 and 's' or '', days, days ~= 1 and 's' or '')
-                        elseif daysRemaining >= 30 then
-                            local months = math.floor(daysRemaining / 30)
-                            local days = daysRemaining % 30
-                            timeRemaining = string.format('%d month%s, %d day%s', months, months > 1 and 's' or '', days, days ~= 1 and 's' or '')
-                        else
-                            timeRemaining = string.format('%d day%s', daysRemaining, daysRemaining ~= 1 and 's' or '')
-                        end
+                        timeRemaining = string.format('%d day%s', daysRemaining, daysRemaining ~= 1 and 's' or '')
                     end
                 else
-                    -- If date format doesn't match, try to handle timestamp
                     timeRemaining = 'Invalid Date Format'
                 end
             end
