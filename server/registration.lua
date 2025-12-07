@@ -19,11 +19,11 @@ lib.callback.register('qbx_vehicleshop:server:getPlayerVehicles', function(sourc
     for i = 1, #vehicles do
         local veh = vehicles[i]
         local regExpDate = 'Unknown'
-        
+
         if config.imperialCAD.enable then
             local cleanPlate = veh.plate:gsub("%s+", "")
             local promise = promise.new()
-            
+
             exports["ImperialCAD"]:CheckPlate({
                 plate = cleanPlate
             }, function(success, res)
@@ -35,7 +35,7 @@ lib.callback.register('qbx_vehicleshop:server:getPlayerVehicles', function(sourc
                 end
                 promise:resolve()
             end)
-            
+
             Citizen.Await(promise)
         end
 
@@ -92,7 +92,7 @@ end)
 RegisterNetEvent('qbx_vehicleshop:server:renewRegistration', function(plate)
     local src = source
     local player = exports.qbx_core:GetPlayer(src)
-    
+
     if not player then return end
 
     local vehicleId = exports.qbx_vehicles:GetVehicleIdByPlate(plate)

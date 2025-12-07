@@ -51,7 +51,7 @@ function OpenRegistrationMenu()
             local veh = vehicles[i]
             local statusColor = 'green'
             local statusText = 'Valid'
-            
+
             -- Check if registration is expired
             if veh.regExpDate and veh.regExpDate ~= 'Unknown' then
                 local expYear, expMonth, expDay = veh.regExpDate:match("(%d+)-(%d+)-(%d+)")
