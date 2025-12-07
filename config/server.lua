@@ -88,8 +88,13 @@ return {
         }
         local color = colorNames[primaryColor] or "Unknown"
 
-        -- Generate random VIN (17 characters)
-        local vin = lib.string.random('XXXXXXXXXXXXXXXXX'):upper()
+        -- Generate random VIN (17 characters - alphanumeric excluding I, O, Q to match real VIN standards)
+        local vinChars = "0123456789ABCDEFGHJKLMNPRSTUVWXYZ" -- Excludes I, O, Q per VIN standards
+        local vin = ""
+        for i = 1, 17 do
+            local randomIndex = math.random(1, #vinChars)
+            vin = vin .. vinChars:sub(randomIndex, randomIndex)
+        end
 
         -- Get current date and add 1 year for registration expiration
         local regExpDate = os.date("%Y-%m-%d", os.time() + 31536000)
