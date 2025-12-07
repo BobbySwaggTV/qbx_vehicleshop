@@ -58,6 +58,7 @@ function OpenRegistrationMenu()
             local statusColor = 'green'
             local statusText = 'Valid'
             local timeRemaining = 'N/A'
+            local displayDate = veh.regExpDate or 'Unknown'
 
             -- Check registration status from database
             if veh.regStatus == false or veh.regStatus == 0 then
@@ -65,11 +66,20 @@ function OpenRegistrationMenu()
                 statusText = 'Invalid'
                 timeRemaining = 'Expired'
             elseif veh.regExpDate and veh.regExpDate ~= 'Unknown' then
-                -- Convert to string if it's a number (timestamp)
                 local dateStr = tostring(veh.regExpDate)
+                displayDate = dateStr
+
+                -- If it's a timestamp (very large number), convert it
+                if tonumber(dateStr) and tonumber(dateStr) > 10000000000 then
+                    local timestamp = tonumber(dateStr)
+                    -- Convert milliseconds to seconds
+                    timestamp = math.floor(timestamp / 1000)
+                    displayDate = os.date("%Y-%m-%d", timestamp) --[[@as string]]
+                    dateStr = displayDate
+                end
 
                 -- Check if registration is expired or expiring soon
-                local expYear, expMonth, expDay = dateStr:match("(%d+)-(%d+)-(%d+)")
+                local expYear, expMonth, expDay = tostring(dateStr):match("(%d+)-(%d+)-(%d+)")
                 if expYear and expMonth and expDay then
                     local expTime = os.time({year = tonumber(expYear) --[[@as integer]], month = tonumber(expMonth) --[[@as integer]], day = tonumber(expDay) --[[@as integer]]})
                     local currentTime = os.time()
@@ -109,7 +119,7 @@ function OpenRegistrationMenu()
 
             options[#options + 1] = {
                 title = veh.model or 'Unknown Vehicle',
-                description = string.format('Plate: %s | Expires: %s', veh.plate, veh.regExpDate and tostring(veh.regExpDate) or 'Unknown'),
+                description = string.format('Plate: %s | Expires: %s', veh.plate, displayDate or 'Unknown'),
                 icon = 'car',
                 iconColor = statusColor,
                 metadata = {
