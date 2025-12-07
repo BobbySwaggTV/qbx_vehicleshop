@@ -62,6 +62,12 @@ return {
         local plate = GetVehicleNumberPlateText(vehicle)
         local vehicleData = modelName and COREVEHICLES[modelName] or nil
 
+        -- Ensure we have a valid model name
+        if not modelName then
+            lib.print.error('Model name is required for Imperial CAD registration')
+            return false
+        end
+
         -- Get vehicle colors
         local primaryColor, secondaryColor = GetVehicleColours(vehicle)
         local colorNames = {
@@ -88,10 +94,15 @@ return {
         -- Get current date and add 1 year for registration expiration
         local regExpDate = os.date("%Y-%m-%d", os.time() + 31536000)
 
+        -- Get vehicle display name (capitalize first letter of each word)
+        local displayName = modelName:gsub("(%a)([%w_']*)", function(first, rest)
+            return first:upper() .. rest:lower()
+        end)
+
         local vehicleDataPayload = {
             vehicleData = {
                 plate = plate:gsub("%s+", ""), -- Remove extra spaces
-                model = modelName,
+                model = displayName,
                 Make = vehicleData and vehicleData.brand or "Unknown",
                 color = color,
                 year = tostring(os.date("%Y")),
@@ -115,6 +126,13 @@ return {
                 ownerCity = "Los Santos"
             }
         }
+
+        lib.print.info(('Registering vehicle with Imperial CAD - Plate: %s, Model: %s, Owner: %s %s'):format(
+            vehicleDataPayload.vehicleData.plate,
+            vehicleDataPayload.vehicleData.model,
+            playerData.charinfo.firstname,
+            playerData.charinfo.lastname
+        ))
 
         exports["ImperialCAD"]:CreateVehicleAdvanced(vehicleDataPayload, function(success, res)
             if success then
