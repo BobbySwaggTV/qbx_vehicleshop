@@ -95,7 +95,7 @@ return {
 
         -- Get vehicle info from Imperial CAD
         local success, vehicleInfo = pcall(exports["ImperialCAD"].CheckPlate, exports["ImperialCAD"], cleanPlate)
-        
+
         if success and vehicleInfo then
             -- Vehicle exists in Imperial CAD
             lib.print.warn(('Vehicle with plate %s already exists in Imperial CAD'):format(cleanPlate))
@@ -119,7 +119,7 @@ return {
         }
 
         lib.print.info(('Creating vehicle in Imperial CAD with registration status: %s'):format(regStatus))
-        
+
         local createSuccess = pcall(exports["ImperialCAD"].CreateVehicleAdvanced, exports["ImperialCAD"], vehicleData, function(created, res)
             if created then
                 lib.print.info(('Successfully synced registration status (%s) to Imperial CAD for plate %s'):format(regStatus, cleanPlate))
